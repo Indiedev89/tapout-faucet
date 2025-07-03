@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
-  "author": "Matt Spear",
   "scripts": {
     "dev": "nodemon src/api.ts",
     "build": "tsc",
