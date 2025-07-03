@@ -325,6 +325,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/redis@npm:^4.0.11":
+  version: 4.0.11
+  resolution: "@types/redis@npm:4.0.11"
+  dependencies:
+    redis: "npm:*"
+  checksum: 10c0/a543607ce2fdb8bf0352bbe5f38ae0b48a48737c497e77d9a28240c8d440c1646b191d4e09f9eb2f93753f2a2b66bb8e7009e7ececc1a29e97bbc88beea542f4
+  languageName: node
+  linkType: hard
+
 "@types/send@npm:*":
   version: 0.17.1
   resolution: "@types/send@npm:0.17.1"
@@ -883,6 +892,7 @@ __metadata:
     "@types/cors": "npm:^2.8.17"
     "@types/express": "npm:^4.17.21"
     "@types/node": "npm:^20.11.14"
+    "@types/redis": "npm:^4.0.11"
     cors: "npm:^2.8.5"
     dotenv: "npm:^16.4.1"
     ethers: "npm:^6.14.4"
@@ -1695,7 +1705,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"redis@npm:^5.5.6":
+"redis@npm:*, redis@npm:^5.5.6":
   version: 5.5.6
   resolution: "redis@npm:5.5.6"
   dependencies:
