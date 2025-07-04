@@ -153,13 +153,12 @@ async function deleteUserClaimData(userAddress: string): Promise<void> {
 // CORS configuration
 const whitelist = [
   'http://localhost:3000',
+  'http://localhost:8080',
   'http://localhost:5173',
   'https://www.tapout.pro'
-  // We will handle Vercel previews dynamically below.
 ];
 
 const corsOptions = {
-  // 2. Use a function for the origin to dynamically check against the whitelist.
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
