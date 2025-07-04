@@ -155,8 +155,8 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://your-domain.vercel.app',
-    'https://your-custom-domain.com'
+    'https://last-ksc7vldsl-fairbear-team.vercel.app',
+    'https://www.tapout.pro'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
