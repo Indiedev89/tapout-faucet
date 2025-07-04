@@ -9,7 +9,7 @@ import { createClient } from 'redis';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // Interfaces
 interface ClaimRequest {
@@ -171,7 +171,12 @@ app.use(express.json());
 const ERC20_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
   'function balanceOf(address account) view returns (uint256)',
-  'function decimals() view returns (uint8)'
+  'function decimals() view returns (uint8)',
+  'function name() view returns (string)',
+  'function symbol() view returns (string)',
+  'function totalSupply() view returns (uint256)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)'
 ];
 
 // Verify Google reCAPTCHA v2 token
@@ -543,7 +548,7 @@ app.post('/api/claim-tokens', async (req, res) => {
     let wallet;
     try {
       wallet = new ethers.Wallet(privateKey, provider);
-      console.log('Treasury wallet address:', wallet.address);
+      console.log('Faucet wallet address:', wallet.address);
     } catch (error) {
       console.error('Wallet creation error:', error);
       return res.status(500).json({
@@ -565,28 +570,45 @@ app.post('/api/claim-tokens', async (req, res) => {
       CONFIG.TOKEN_DECIMALS
     );
 
-    // Check treasury balance
-    let treasuryBalance;
+    // Check faucet balance
+    let faucetBalance;
     try {
-      treasuryBalance = await tokenContract.balanceOf(wallet.address);
+      faucetBalance = await tokenContract.balanceOf(wallet.address);
       console.log(
-        'Treasury balance:',
-        ethers.formatUnits(treasuryBalance, CONFIG.TOKEN_DECIMALS)
+        'Faucet balance:',
+        ethers.formatUnits(faucetBalance, CONFIG.TOKEN_DECIMALS)
       );
     } catch (error) {
       console.error('Balance check error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to check treasury balance'
+        error: 'Failed to check faucet balance'
       });
     }
 
-    if (treasuryBalance < amountInWei) {
+    if (faucetBalance < amountInWei) {
       return res.status(500).json({
         success: false,
-        error: 'Insufficient treasury balance'
+        error: 'Insufficient faucet balance'
       });
     }
+
+    // --- MODIFICATION START ---
+    // Simulate the transaction first to get a clear error reason
+    try {
+      await tokenContract.transfer.staticCall(userAddress, amountInWei);
+      console.log('✅ Transaction simulation successful.');
+    } catch (simError: any) {
+      console.error('❌ Transaction simulation failed:', simError.reason || simError.message);
+      // Provide a more specific error to the user
+      const reason = simError.reason || 'Transaction would fail on-chain.';
+      return res.status(400).json({
+        success: false,
+        error: `Claim rejected by contract: ${reason}`
+      });
+    }
+    // --- MODIFICATION END ---
+
 
     // Send the transfer transaction with retry logic
     let tx;
@@ -596,10 +618,11 @@ app.post('/api/claim-tokens', async (req, res) => {
       try {
         // Get gas price with buffer
         const gasPrice = await provider.getFeeData();
+
         tx = await tokenContract.transfer(userAddress, amountInWei, {
-          gasLimit: 150000,
+          gasLimit: 300000,
           gasPrice: gasPrice.gasPrice
-            ? (gasPrice.gasPrice * 110n) / 100n
+            ? (gasPrice.gasPrice * 120n) / 100n // Increased buffer to 20%
             : undefined
         });
 
@@ -608,7 +631,7 @@ app.post('/api/claim-tokens', async (req, res) => {
         const receipt = await tx.wait(1);
         console.log(`Transaction confirmed in block: ${receipt.blockNumber}`);
 
-        break; // Exit the loop but continue execution
+        break; // Exit the loop on success
       } catch (error) {
         retries--;
         console.error(`Transaction attempt failed (${3 - retries}/3):`, error);
@@ -618,7 +641,7 @@ app.post('/api/claim-tokens', async (req, res) => {
         }
 
         // Wait a bit before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Increased wait time
       }
     }
 
@@ -691,7 +714,7 @@ app.post('/api/claim-tokens', async (req, res) => {
       });
 
       if (error.message.includes('insufficient funds')) {
-        errorMessage = 'Insufficient gas or treasury funds';
+        errorMessage = 'Insufficient gas or faucet funds';
       } else if (error.message.includes('execution reverted')) {
         errorMessage = 'Transaction was reverted - check token balance';
       } else if (error.message.includes('invalid private key')) {
